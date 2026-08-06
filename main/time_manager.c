@@ -1,9 +1,7 @@
 #include "time_manager.h"
 #include "storage_manager.h"
 #include "utils.h"
-#include "esp_sntp.h"
 #include "esp_netif_sntp.h"
-#include "lwip/apps/sntp.h"
 #include <string.h>
 #include <sys/time.h>
 
@@ -20,9 +18,9 @@ static void time_sync_notification_cb(struct timeval *tv) {
 }
 
 void timeManager_begin(void) {
-    // Initialize SNTP
-    esp_sntp_config_t config = ESP_NETIF_SNTP_DEFAULT_CONFIG_MULTIPLE(3,
-        NTP_SERVER_1, NTP_SERVER_2, NTP_SERVER_3);
+    // Initialize SNTP with multiple servers (array)
+    const char *servers[] = { NTP_SERVER_1, NTP_SERVER_2, NTP_SERVER_3 };
+    esp_sntp_config_t config = ESP_NETIF_SNTP_DEFAULT_CONFIG_MULTIPLE(3, servers);
     config.sync_cb = time_sync_notification_cb;
     esp_netif_sntp_init(&config);
 
@@ -47,7 +45,6 @@ void timeManager_loop(void) {
     uint64_t now = esp_timer_get_time();
 
     if (!ntpSynced) {
-        // Try NTP sync every 10 seconds if WiFi connected (we'll check later)
         if ((now - lastSyncAttemptUs) > (NTP_RETRY_INTERVAL_MS * 1000ULL)) {
             lastSyncAttemptUs = now;
             esp_netif_sntp_start();
@@ -55,7 +52,6 @@ void timeManager_loop(void) {
         return;
     }
 
-    // Periodic resync every 6 hours
     if ((now - lastGoodSyncUs) > (NTP_RESYNC_INTERVAL_MS * 1000ULL)) {
         esp_netif_sntp_start();
     }
