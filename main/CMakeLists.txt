@@ -24,11 +24,10 @@ idf_component_register(
         spiffs
         driver
         esp_timer
-        cjson          # 🔥 JSON Parsing के लिए
-        mdns           # 🔥 mDNS Service Discovery के लिए
+        json           # 🔥 cjson → json (सही Component Name)
+        mdns
 )
 
-# 🔥 Compiler Flags – Warnings को Errors में न बदलें
 target_compile_options(${COMPONENT_LIB} PRIVATE
     -Wno-format
     -Wno-incompatible-pointer-types
