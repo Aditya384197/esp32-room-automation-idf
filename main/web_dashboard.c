@@ -16,7 +16,7 @@
 #include "esp_wifi.h"
 #include "lwip/sockets.h"
 #include "lwip/netdb.h"
-#include "mbedtls/sha1.h"          // 🔥 Include for SHA1 functions
+#include "mbedtls/sha1.h"
 #include "mbedtls/base64.h"
 
 #include <string.h>
@@ -24,6 +24,16 @@
 
 #define TAG "WEB_DASH"
 
+// ============================================================
+// बाहरी चर – wifi_manager.c में परिभाषित
+// ============================================================
+extern bool _wifi_connect_pending;
+extern char _wifi_target_ssid[33];
+extern uint64_t _wifi_connect_start_us;
+
+// ============================================================
+// (बाकी सब कुछ वैसा ही – जैसा आपने भेजा था)
+// ============================================================
 static httpd_handle_t _http_server = NULL;
 static int _dns_sock = -1;
 static volatile bool _dns_running = false;
@@ -212,7 +222,6 @@ void webDashboard_broadcastState(void) {
     cJSON_AddBoolToObject(root, "synced", timeManager_isSynced());
     cJSON_AddBoolToObject(root, "ntpSynced", timeManager_isNtpSynced());
 
-    // 🔥 Check STA connection using esp_wifi_sta_get_ap_info
     wifi_ap_record_t ap_info;
     bool sta_connected = (esp_wifi_sta_get_ap_info(&ap_info) == ESP_OK);
     cJSON_AddBoolToObject(root, "wifi", sta_connected);
@@ -788,7 +797,7 @@ static esp_err_t _handle_ws(httpd_req_t *req) {
 }
 
 // ============================================================
-// OTA Upload Handler (kept but marked unused)
+// OTA Upload Handler (dummy)
 // ============================================================
 static esp_err_t _ota_upload_handler(httpd_req_t *req) {
     (void)req;
@@ -822,7 +831,7 @@ void webDashboard_begin(void) {
         { "/api/wifi/status", HTTP_GET, _handle_wifi_status, NULL },
         { "/api/wifi/connect", HTTP_POST, _handle_wifi_connect, NULL },
         { "/ws", HTTP_GET, _handle_ws, NULL },
-        { "/update", HTTP_POST, _ota_upload_handler, NULL }, // dummy for now
+        { "/update", HTTP_POST, _ota_upload_handler, NULL },
     };
     for (int i = 0; i < sizeof(uris)/sizeof(uris[0]); i++) {
         httpd_register_uri_handler(_http_server, &uris[i]);
