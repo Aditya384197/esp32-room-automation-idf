@@ -24,10 +24,11 @@ idf_component_register(
         spiffs
         driver
         esp_timer
-        cjson          # 🔥 यह Add करें – web_dashboard.c में cJSON.h Use हो रहा है
-        mdns           # 🔥 यह Add करें – web_dashboard.c में mdns Use हो रहा है
+        cjson          # 🔥 JSON Parsing के लिए
+        mdns           # 🔥 mDNS Service Discovery के लिए
 )
 
+# 🔥 Compiler Flags – Warnings को Errors में न बदलें
 target_compile_options(${COMPONENT_LIB} PRIVATE
     -Wno-format
     -Wno-incompatible-pointer-types
