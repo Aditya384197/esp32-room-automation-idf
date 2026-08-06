@@ -20,8 +20,8 @@ jobs:
     - name: Setup ESP-IDF and Build
       uses: espressif/esp-idf-ci-action@v1
       with:
-        esp_idf_version: v5.3.2   # ✅ सही पैरामीटर – v5.3.2 में json कंपोनेंट उपलब्ध
-        target: esp32             # वैकल्पिक, पर स्पष्टता के लिए
+        esp_idf_version: v5.3.2
+        target: esp32
         command: |
           idf.py build
 
