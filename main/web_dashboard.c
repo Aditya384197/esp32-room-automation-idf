@@ -32,15 +32,13 @@ extern char _wifi_target_ssid[33];
 extern uint64_t _wifi_connect_start_us;
 
 // ============================================================
-// (बाकी सब कुछ वैसा ही – जैसा आपने भेजा था)
+// Globals
 // ============================================================
 static httpd_handle_t _http_server = NULL;
 static int _dns_sock = -1;
 static volatile bool _dns_running = false;
 static volatile bool _ota_in_progress = false;
 static volatile uint64_t _ota_last_chunk_us = 0;
-static int _ota_failed_auth = 0;
-static uint64_t _ota_lockout_until = 0;
 
 static struct ws_client {
     int fd;
@@ -68,26 +66,6 @@ static void base64_encode(const unsigned char *input, int len, char *output) {
     if (len % 3 == 1) { output[j-1] = '='; output[j-2] = '='; }
     else if (len % 3 == 2) { output[j-1] = '='; }
     output[j] = '\0';
-}
-
-static bool check_basic_auth(httpd_req_t *req) {
-    char auth_header[128];
-    if (httpd_req_get_hdr_value_str(req, "Authorization", auth_header, sizeof(auth_header)) != ESP_OK) {
-        return false;
-    }
-    const char *prefix = "Basic ";
-    if (strncasecmp(auth_header, prefix, strlen(prefix)) != 0) return false;
-    const char *b64 = auth_header + strlen(prefix);
-    unsigned char decoded[128];
-    size_t decoded_len;
-    if (mbedtls_base64_decode(decoded, sizeof(decoded), &decoded_len,
-                              (const unsigned char *)b64, strlen(b64)) != 0) {
-        return false;
-    }
-    decoded[decoded_len] = '\0';
-    char expected_str[64];
-    snprintf(expected_str, sizeof(expected_str), "%s:%s", OTA_AUTH_USER, OTA_AUTH_PASS);
-    return (strcmp((char *)decoded, expected_str) == 0);
 }
 
 // ============================================================
@@ -302,11 +280,12 @@ static bool _ws_handshake(httpd_req_t *req) {
 // HTTP Handlers
 // ============================================================
 static esp_err_t _handle_root(httpd_req_t *req) {
-    char html[8192];
-    strcpy(html, DASHBOARD_HTML);
+    char html[16384];  // बड़ा बफ़र – DASHBOARD_HTML के लिए पर्याप्त
+    // सुरक्षित कॉपी – strlcpy array-bounds चेतावनी नहीं देता
+    strlcpy(html, DASHBOARD_HTML, sizeof(html));
     char *p = strstr(html, "%API_KEY%");
     if (p) {
-        char tmp[8192];
+        char tmp[16384];
         size_t prefix = p - html;
         memcpy(tmp, html, prefix);
         tmp[prefix] = '\0';
@@ -716,18 +695,22 @@ static esp_err_t _handle_wifi_status(httpd_req_t *req) {
     cJSON *root = cJSON_CreateObject();
     if (_wifi_connect_pending) {
         cJSON_AddStringToObject(root, "status", "connecting");
-    } else if (esp_wifi_sta_is_connected()) {
-        cJSON_AddStringToObject(root, "status", "connected");
-        esp_netif_t *netif = esp_netif_get_handle_from_ifkey("WIFI_STA_DEF");
-        if (netif) {
-            esp_netif_ip_info_t ip_info;
-            esp_netif_get_ip_info(netif, &ip_info);
-            char ip_str[16];
-            esp_ip4addr_ntoa(&ip_info.ip, ip_str, sizeof(ip_str));
-            cJSON_AddStringToObject(root, "ip", ip_str);
-        }
     } else {
-        cJSON_AddStringToObject(root, "status", "idle");
+        // ✅ सही तरीका – esp_wifi_sta_get_ap_info से STA कनेक्शन जाँचें
+        wifi_ap_record_t ap_info;
+        if (esp_wifi_sta_get_ap_info(&ap_info) == ESP_OK) {
+            cJSON_AddStringToObject(root, "status", "connected");
+            esp_netif_t *netif = esp_netif_get_handle_from_ifkey("WIFI_STA_DEF");
+            if (netif) {
+                esp_netif_ip_info_t ip_info;
+                esp_netif_get_ip_info(netif, &ip_info);
+                char ip_str[16];
+                esp_ip4addr_ntoa(&ip_info.ip, ip_str, sizeof(ip_str));
+                cJSON_AddStringToObject(root, "ip", ip_str);
+            }
+        } else {
+            cJSON_AddStringToObject(root, "status", "idle");
+        }
     }
     char *json = cJSON_PrintUnformatted(root);
     httpd_resp_send(req, json, strlen(json));
@@ -797,7 +780,7 @@ static esp_err_t _handle_ws(httpd_req_t *req) {
 }
 
 // ============================================================
-// OTA Upload Handler (dummy)
+// OTA Upload Handler (dummy – अभी के लिए)
 // ============================================================
 static esp_err_t _ota_upload_handler(httpd_req_t *req) {
     (void)req;
@@ -847,7 +830,7 @@ void webDashboard_begin(void) {
 }
 
 void webDashboard_loop(void) {
-    // Nothing
+    // कुछ नहीं (भविष्य के लिए)
 }
 
 bool webDashboard_isApMode(void) {
