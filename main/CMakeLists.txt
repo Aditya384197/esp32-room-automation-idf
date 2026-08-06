@@ -24,8 +24,9 @@ idf_component_register(
         spiffs
         driver
         esp_timer
-        json           # 🔥 cjson → json (सही Component Name)
+        json
         mdns
+        app_update          # 🔥 Added for OTA support
 )
 
 target_compile_options(${COMPONENT_LIB} PRIVATE
