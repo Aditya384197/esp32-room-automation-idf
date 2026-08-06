@@ -5,6 +5,12 @@ idf_component_register(
     SRCS
         main.c
         utils.c
+        storage_manager.c
+        device_control.c
+        time_manager.c
+        schedule_manager.c
+        timer_manager.c
+        web_dashboard.c
     INCLUDE_DIRS
         "."
     PRIV_REQUIRES
@@ -18,6 +24,8 @@ idf_component_register(
         spiffs
         driver
         esp_timer
+        cjson          # 🔥 यह Add करें – web_dashboard.c में cJSON.h Use हो रहा है
+        mdns           # 🔥 यह Add करें – web_dashboard.c में mdns Use हो रहा है
 )
 
 target_compile_options(${COMPONENT_LIB} PRIVATE
