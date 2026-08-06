@@ -20,14 +20,14 @@ jobs:
     - name: Setup ESP-IDF and Build
       uses: espressif/esp-idf-ci-action@v1
       with:
-        idf_version: v5.3.2
+        esp_idf_version: v5.3.2   # ✅ सही पैरामीटर और संस्करण
+        target: esp32             # वैकल्पिक, पर स्पष्टता के लिए
         command: |
-          idf.py set-target esp32
           idf.py build
 
     - name: Upload Firmware Artifact
       uses: actions/upload-artifact@v4
       with:
         name: esp32-room-automation-firmware
-        path: build/*.bin
+        path: build/**/*.bin
         retention-days: 30
