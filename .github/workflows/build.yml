@@ -1,4 +1,4 @@
-Name: Build ESP32 Room Automation
+name: Build ESP32 Room Automation
 
 on:
   push:
@@ -17,32 +17,17 @@ jobs:
       with:
         submodules: 'recursive'
 
-    - name: Setup ESP-IDF
+    - name: Setup ESP-IDF and Build
       uses: espressif/esp-idf-ci-action@v1
       with:
-        esp_idf_version: v5.3.2
+        esp_idf_version: v5.3.2   # ✅ सही पैरामीटर – v5.3.2 में json कंपोनेंट उपलब्ध
+        target: esp32             # वैकल्पिक, पर स्पष्टता के लिए
         command: |
-          idf.py set-target esp32
           idf.py build
-
-    - name: Merge Firmware into Single Binary (Optional)
-      run: |
-        if [ -f build/esp32_room_automation.bin ]; then
-          esptool.py --chip esp32 merge_bin \
-            -o build/esp32_room_automation_merged.bin \
-            --flash_mode dio \
-            --flash_size 2MB \
-            0x1000 build/bootloader/bootloader.bin \
-            0x8000 build/partition_table/partition-table.bin \
-            0x10000 build/esp32_room_automation.bin
-          echo "✅ Merged binary created"
-        fi
 
     - name: Upload Firmware Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: room-automation-firmware
-        path: |
-          build/**/*.bin
-          build/*_merged.bin
+        name: esp32-room-automation-firmware
+        path: build/*.bin
         retention-days: 30
