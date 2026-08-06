@@ -18,17 +18,13 @@ static void time_sync_notification_cb(struct timeval *tv) {
 }
 
 void timeManager_begin(void) {
-    // NTP Servers Array
+    // 🔥 NTP Servers Array
     const char *servers[3] = { NTP_SERVER_1, NTP_SERVER_2, NTP_SERVER_3 };
 
-    // 🔥 Zero-initialize and then set fields individually (no warnings)
-    esp_sntp_config_t config = {0};
-    config.start = false;
-    config.server_from_dhcp = false;
-    config.wait_for_sync = false;
-    config.servers = servers;
-    config.num_of_servers = 3;
-    config.sync_cb = time_sync_notification_cb;
+    // 🔥 Use the macro – it handles array assignment correctly without any warnings
+    esp_sntp_config_t config = ESP_NETIF_SNTP_DEFAULT_CONFIG_MULTIPLE(3, servers);
+    config.sync_cb = time_sync_notification_cb;   // Set callback
+    config.start = false;                         // Don't start immediately
 
     esp_netif_sntp_init(&config);
 
