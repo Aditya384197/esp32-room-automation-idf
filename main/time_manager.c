@@ -18,16 +18,31 @@ static void time_sync_notification_cb(struct timeval *tv) {
 }
 
 void timeManager_begin(void) {
-    // Initialize SNTP with multiple servers (array)
-    const char *servers[] = { NTP_SERVER_1, NTP_SERVER_2, NTP_SERVER_3 };
-    esp_sntp_config_t config = ESP_NETIF_SNTP_DEFAULT_CONFIG_MULTIPLE(3, servers);
-    config.sync_cb = time_sync_notification_cb;
+    // 🔥 NTP Servers Array
+    const char *servers[] = { 
+        NTP_SERVER_1, 
+        NTP_SERVER_2, 
+        NTP_SERVER_3 
+    };
+
+    // 🔥 Explicit initialization – no macros, no warnings
+    esp_sntp_config_t config = {
+        .smooth = false,
+        .start = false,
+        .server_from_dhcp = false,
+        .wait_for_all = false,
+        .servers = servers,
+        .num_servers = 3,
+        .sync_cb = time_sync_notification_cb,
+    };
+
     esp_netif_sntp_init(&config);
 
-    // Set timezone (GMT+5:30)
+    // 🔥 Set timezone (GMT+5:30)
     setenv("TZ", "IST-5:30", 1);
     tzset();
 
+    // 🔥 Load fallback time from NVS
     uint32_t savedEpoch = storage_loadLastEpoch();
     if (savedEpoch > 0) {
         struct timeval tv;
@@ -52,6 +67,7 @@ void timeManager_loop(void) {
         return;
     }
 
+    // 🔥 Resync every 6 hours
     if ((now - lastGoodSyncUs) > (NTP_RESYNC_INTERVAL_MS * 1000ULL)) {
         esp_netif_sntp_start();
     }
