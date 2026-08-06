@@ -25,9 +25,24 @@ jobs:
           idf.py set-target esp32
           idf.py build
 
+    - name: Merge Firmware into Single Binary (Optional)
+      run: |
+        if [ -f build/esp32_room_automation.bin ]; then
+          esptool.py --chip esp32 merge_bin \
+            -o build/esp32_room_automation_merged.bin \
+            --flash_mode dio \
+            --flash_size 2MB \
+            0x1000 build/bootloader/bootloader.bin \
+            0x8000 build/partition_table/partition-table.bin \
+            0x10000 build/esp32_room_automation.bin
+          echo "✅ Merged binary created"
+        fi
+
     - name: Upload Firmware Artifact
       uses: actions/upload-artifact@v4
       with:
         name: room-automation-firmware
-        path: build/**/*.bin
+        path: |
+          build/**/*.bin
+          build/*_merged.bin
         retention-days: 30
