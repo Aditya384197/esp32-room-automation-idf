@@ -12,8 +12,8 @@
 #define STATUS_LED_PIN    2
 
 // ===================== Relay Active State =====================
-#define RELAY_ON   LOW
-#define RELAY_OFF  HIGH
+#define RELAY_ON   0
+#define RELAY_OFF  1
 
 // ===================== Debounce =====================
 #define DEBOUNCE_MS   45UL
