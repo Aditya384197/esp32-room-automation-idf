@@ -24,7 +24,7 @@ idf_component_register(
         spiffs
         driver
         esp_timer
-        json           # ✅ यहाँ cJSON की जगह json लिखें
+        json           # 🔥 cJSON नहीं – json ही सही है
         mdns
 )
 
