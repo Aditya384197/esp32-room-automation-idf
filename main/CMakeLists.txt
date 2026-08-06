@@ -4,13 +4,13 @@ set(COMPONENT_ADD_INCLUDEDIRS .)
 idf_component_register(
     SRCS
         main.c
-        utils.c
-        storage_manager.c
         device_control.c
+        storage_manager.c
         time_manager.c
         schedule_manager.c
         timer_manager.c
         web_dashboard.c
+        utils.c
     INCLUDE_DIRS
         "."
     PRIV_REQUIRES
@@ -24,9 +24,8 @@ idf_component_register(
         spiffs
         driver
         esp_timer
-        json
-        mdns
-        app_update          # 🔥 Added for OTA support
+        cJSON          # ✅ यहाँ "json" की जगह "cJSON" डालें
+        mdns           # यदि आप mDNS उपयोग कर रहे हैं (हाँ, web_dashboard.c में)
 )
 
 target_compile_options(${COMPONENT_LIB} PRIVATE
