@@ -24,8 +24,9 @@ idf_component_register(
         spiffs
         driver
         esp_timer
-        json           # ✅ सही – cJSON नहीं
-        mdns           # ✅ mdns को PRIV_REQUIRES में रखें (यह ज़रूरी है)
+        json
+        mdns
+        app_update          # 🔥 यह लाइन जोड़ें – OTA के लिए
 )
 
 target_compile_options(${COMPONENT_LIB} PRIVATE
