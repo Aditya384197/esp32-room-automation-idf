@@ -1,5 +1,6 @@
 #include "utils.h"
 #include "driver/uart.h"
+#include "esp_random.h"   // 🔥 Added this line
 
 #define UART_NUM UART_NUM_0
 #define BUF_SIZE 128
