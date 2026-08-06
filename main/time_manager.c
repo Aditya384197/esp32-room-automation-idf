@@ -18,16 +18,17 @@ static void time_sync_notification_cb(struct timeval *tv) {
 }
 
 void timeManager_begin(void) {
-    // 🔥 Compound literal for servers array – no assignment error
-    esp_sntp_config_t config = {
-        .start = false,
-        .server_from_dhcp = false,
-        .wait_for_sync = false,
-        .redundant = false,
-        .num_of_servers = 3,
-        .servers = (const char *[]){ NTP_SERVER_1, NTP_SERVER_2, NTP_SERVER_3 },
-        .sync_cb = time_sync_notification_cb,
-    };
+    // NTP Servers Array
+    const char *servers[3] = { NTP_SERVER_1, NTP_SERVER_2, NTP_SERVER_3 };
+
+    // 🔥 Zero-initialize and then set fields individually (no warnings)
+    esp_sntp_config_t config = {0};
+    config.start = false;
+    config.server_from_dhcp = false;
+    config.wait_for_sync = false;
+    config.servers = servers;
+    config.num_of_servers = 3;
+    config.sync_cb = time_sync_notification_cb;
 
     esp_netif_sntp_init(&config);
 
@@ -60,6 +61,7 @@ void timeManager_loop(void) {
         return;
     }
 
+    // Resync every 6 hours
     if ((now - lastGoodSyncUs) > (NTP_RESYNC_INTERVAL_MS * 1000ULL)) {
         esp_netif_sntp_start();
     }
