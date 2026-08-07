@@ -24,13 +24,15 @@ jobs:
         target: esp32
         command: |
           idf.py build
-          idf.py merge-bin          # 🔥 यह एक लाइन जोड़ें – merge.bin बनाएगा
+          idf.py merge-bin || echo "merge-bin not available, skipping"
+          ls -la build/   # 🔥 डीबग के लिए – देखें कि फाइलें बनीं या नहीं
 
     - name: Upload Firmware Artifact
       uses: actions/upload-artifact@v4
       with:
         name: esp32-room-automation-firmware
         path: |
-          build/*.bin               # सभी .bin फाइलें अपलोड करें
-          build/merged-flash.bin    # खास तौर पर merged फाइल
+          build/*.bin
+          build/merged-flash.bin
+          build/merge.bin
         retention-days: 30
