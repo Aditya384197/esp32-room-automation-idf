@@ -1,145 +1,53 @@
-name: Backup All GitHub Repositories
+name: Build Android 10 Music APK
 
 on:
+  workflow_dispatch:
   push:
     paths:
+      - 'Android10-Music-Source.zip'
       - '.github/workflows/build.yml'
-  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  backup:
+  build-android10-apk:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Install Git and ZIP
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
+        run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0' 'platform-tools'
+
+      - name: Set up Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Extract Android 10 source
         run: |
-          git --version
-          zip -v
+          test -f Android10-Music-Source.zip
+          rm -rf Android10-Music-Source
+          mkdir -p Android10-Music-Source
+          unzip -q Android10-Music-Source.zip -d Android10-Music-Source
 
-      - name: Clone All Repositories
-        env:
-          GH_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
-        shell: bash
-        run: |
-          mkdir -p backup
+      - name: Build debug APK
+        run: gradle --no-daemon --stacktrace -p Android10-Music-Source assembleDebug
 
-          repos=(
-            ESP32_MultiBoot_Pro_v1_3
-            esp32-room-automation
-            Store
-            esp32_s3_nat_router_lite_v2
-            ESP32_Home_Automation_FEATURE_RICH-2
-            SchoolChatApp
-            esp32_3D_case
-            esp_wifi_repeater
-            ESP32s3_Nat_Router
-            ESP32_WiFi_Security_Toolkit
-            esp8266_smart_home
-            ESP32_Home_Automation_Pro
-            Esp32_wifi_tool
-            FitSaathi
-            ESP32_S3_Nat_Router
-            home_automation
-            ESP32WifiPhisher
-            esp8266_repeater
-            ShareWave
-            aditya-music-android
-            ESP32_nat_router
-            esp32-room-automation-idf
-            Single_RoomAutomation
-            ESP32_S3_Nat_Extander
-            PDF-reader-
-            ESP32_RoomAutomation
-            esp32_s3_nat_router_lite_v3
-            SingleRoomAutomation
-            esp32_s3_nat_router_lite
-            ESP32_Standerd_Nat_Router
-            esp32-nat-router
-            esp32-weather-station
-            ESP32_S3_HID
-            ESP32_Home_Automation_FEATURE_RICH
-            ESP8266_Home_Automation
-            ESP32_Home_Automation
-            esp32-nat-router-max
-            ESP32_Router
-            ESP32_Flasher
-            ESP8266-OneRoom-Automation
-            SchoolChatApp-2
-            SharePro
-          )
-
-          failed=0
-          success=0
-
-          : > backup/backup-report.txt
-          : > backup/failed-repositories.txt
-
-          for i in "${!repos[@]}"; do
-            n=$(printf "%02d" $((i+1)))
-            repo="${repos[$i]}"
-            folder="backup/$n-$repo"
-
-            echo "================================"
-            echo "Backing up $n/${#repos[@]}: $repo"
-            echo "================================"
-
-            if git clone --depth 1 \
-              "https://x-access-token:${GH_TOKEN}@github.com/Aditya384197/${repo}.git" \
-              "$folder"; then
-
-              echo "SUCCESS: $repo"
-              echo "SUCCESS: $repo" >> backup/backup-report.txt
-              success=$((success+1))
-
-            else
-              echo "FAILED: $repo"
-              echo "FAILED: $repo" >> backup/backup-report.txt
-              echo "$repo" >> backup/failed-repositories.txt
-              rm -rf "$folder"
-              failed=$((failed+1))
-            fi
-          done
-
-          echo "Total repositories: ${#repos[@]}" >> backup/backup-report.txt
-          echo "Successful: $success" >> backup/backup-report.txt
-          echo "Failed: $failed" >> backup/backup-report.txt
-
-          echo "SUCCESS_COUNT=$success" >> "$GITHUB_ENV"
-          echo "FAILED_COUNT=$failed" >> "$GITHUB_ENV"
-
-      - name: Create ZIP Backup
-        if: always()
-        run: |
-          zip -qr Aditya_All_Repositories_Backup.zip backup
-
-          echo "ZIP backup created."
-          ls -lh Aditya_All_Repositories_Backup.zip
-
-      - name: Upload ZIP Artifact
-        if: always()
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Aditya-All-Repositories-Source-Backup
-          path: Aditya_All_Repositories_Backup.zip
-          compression-level: 0
-          retention-days: 7
+          name: Android10-Music-APK
+          path: Android10-Music-Source/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
-
-      - name: Backup Summary
-        if: always()
-        run: |
-          echo "================================"
-          echo "BACKUP SUMMARY"
-          echo "================================"
-          echo "Successful: ${SUCCESS_COUNT:-0}"
-          echo "Failed: ${FAILED_COUNT:-0}"
-
-          if [ "${FAILED_COUNT:-0}" -gt 0 ]; then
-            echo "Some repositories could not be backed up."
-            exit 1
-          fi
-
-          echo "All repositories backed up successfully."
+          retention-days: 30
