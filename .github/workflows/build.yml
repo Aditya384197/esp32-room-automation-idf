@@ -14,16 +14,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Install Git
+      - name: Install Git and ZIP
         run: |
           git --version
+          zip -v
 
-      - name: Clone all repositories
+      - name: Clone All Repositories
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+        shell: bash
         run: |
           mkdir -p backup
-          cd backup
 
           repos=(
             ESP32_MultiBoot_Pro_v1_3
@@ -71,38 +72,74 @@ jobs:
           )
 
           failed=0
+          success=0
+
+          : > backup/backup-report.txt
+          : > backup/failed-repositories.txt
 
           for i in "${!repos[@]}"; do
             n=$(printf "%02d" $((i+1)))
             repo="${repos[$i]}"
+            folder="backup/$n-$repo"
 
-            echo "Backing up $n/$repo"
+            echo "================================"
+            echo "Backing up $n/${#repos[@]}: $repo"
+            echo "================================"
 
             if git clone --depth 1 \
-              "https://github.com/Aditya384197/$repo.git" \
-              "$n-$repo"; then
+              "https://x-access-token:${GH_TOKEN}@github.com/Aditya384197/${repo}.git" \
+              "$folder"; then
+
               echo "SUCCESS: $repo"
+              echo "SUCCESS: $repo" >> backup/backup-report.txt
+              success=$((success+1))
+
             else
               echo "FAILED: $repo"
+              echo "FAILED: $repo" >> backup/backup-report.txt
+              echo "$repo" >> backup/failed-repositories.txt
+              rm -rf "$folder"
               failed=$((failed+1))
             fi
           done
 
+          echo "Total repositories: ${#repos[@]}" >> backup/backup-report.txt
+          echo "Successful: $success" >> backup/backup-report.txt
+          echo "Failed: $failed" >> backup/backup-report.txt
+
+          echo "SUCCESS_COUNT=$success" >> "$GITHUB_ENV"
           echo "FAILED_COUNT=$failed" >> "$GITHUB_ENV"
 
-      - name: Create ZIP
+      - name: Create ZIP Backup
+        if: always()
         run: |
           zip -qr Aditya_All_Repositories_Backup.zip backup
 
-      - name: Upload ZIP
+          echo "ZIP backup created."
+          ls -lh Aditya_All_Repositories_Backup.zip
+
+      - name: Upload ZIP Artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: Aditya-All-Repositories-Source-Backup
-          path: backup/Aditya_All_Repositories_Backup.zip
+          path: Aditya_All_Repositories_Backup.zip
           compression-level: 0
           retention-days: 7
+          if-no-files-found: error
 
       - name: Backup Summary
+        if: always()
         run: |
-          echo "Backup process completed."
-          echo "Failed repositories: $FAILED_COUNT"
+          echo "================================"
+          echo "BACKUP SUMMARY"
+          echo "================================"
+          echo "Successful: ${SUCCESS_COUNT:-0}"
+          echo "Failed: ${FAILED_COUNT:-0}"
+
+          if [ "${FAILED_COUNT:-0}" -gt 0 ]; then
+            echo "Some repositories could not be backed up."
+            exit 1
+          fi
+
+          echo "All repositories backed up successfully."
