@@ -1,0 +1,18 @@
+Upstream source: https://android.googlesource.com/platform/packages/apps/Music
+Branch used for the supplied archive: android16-release
+Supplied source revision: fb66b2e771943182573665f4fd302a844b99d2d6
+
+Important source limitation:
+The supplied upstream revision does not contain the complete Music library/player UI.
+MusicBrowserActivity and MusicPicker are empty placeholders, and MediaPlaybackService
+contains an empty MediaSession callback. The Android 10 port adds only a small local-song
+launcher/list so the package can be opened as an installed app. The original AudioPreview
+implementation and its resources are retained. This is not feature parity with a complete
+legacy Music app; full playlists, artist/album browsing, a persistent background playback
+engine, and original full-screen animations cannot be recovered from this source snapshot.
+
+Compatibility target:
+- minSdk 29 (Android 10)
+- targetSdk 29 (Android 10 legacy external-storage behavior)
+- compileSdk 35
+- Java 8 source compatibility
