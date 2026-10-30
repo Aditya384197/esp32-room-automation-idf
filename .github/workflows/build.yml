@@ -1,38 +1,108 @@
-name: Build ESP32 Room Automation
+name: Backup All GitHub Repositories
 
 on:
   push:
-    branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
+    paths:
+      - '.github/workflows/build.yml'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
-  build:
+  backup:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        submodules: 'recursive'
+      - name: Install Git
+        run: |
+          git --version
 
-    - name: Setup ESP-IDF and Build
-      uses: espressif/esp-idf-ci-action@v1
-      with:
-        esp_idf_version: v5.3.2
-        target: esp32
-        command: |
-          idf.py build
-          idf.py merge-bin || echo "merge-bin not available, skipping"
-          ls -la build/   # 🔥 डीबग के लिए – देखें कि फाइलें बनीं या नहीं
+      - name: Clone all repositories
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p backup
+          cd backup
 
-    - name: Upload Firmware Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: esp32-room-automation-firmware
-        path: |
-          build/*.bin
-          build/merged-flash.bin
-          build/merge.bin
-        retention-days: 30
+          repos=(
+            ESP32_MultiBoot_Pro_v1_3
+            esp32-room-automation
+            Store
+            esp32_s3_nat_router_lite_v2
+            ESP32_Home_Automation_FEATURE_RICH-2
+            SchoolChatApp
+            esp32_3D_case
+            esp_wifi_repeater
+            ESP32s3_Nat_Router
+            ESP32_WiFi_Security_Toolkit
+            esp8266_smart_home
+            ESP32_Home_Automation_Pro
+            Esp32_wifi_tool
+            FitSaathi
+            ESP32_S3_Nat_Router
+            home_automation
+            ESP32WifiPhisher
+            esp8266_repeater
+            ShareWave
+            aditya-music-android
+            ESP32_nat_router
+            esp32-room-automation-idf
+            Single_RoomAutomation
+            ESP32_S3_Nat_Extander
+            PDF-reader-
+            ESP32_RoomAutomation
+            esp32_s3_nat_router_lite_v3
+            SingleRoomAutomation
+            esp32_s3_nat_router_lite
+            ESP32_Standerd_Nat_Router
+            esp32-nat-router
+            esp32-weather-station
+            ESP32_S3_HID
+            ESP32_Home_Automation_FEATURE_RICH
+            ESP8266_Home_Automation
+            ESP32_Home_Automation
+            esp32-nat-router-max
+            ESP32_Router
+            ESP32_Flasher
+            ESP8266-OneRoom-Automation
+            SchoolChatApp-2
+            SharePro
+          )
+
+          failed=0
+
+          for i in "${!repos[@]}"; do
+            n=$(printf "%02d" $((i+1)))
+            repo="${repos[$i]}"
+
+            echo "Backing up $n/$repo"
+
+            if git clone --depth 1 \
+              "https://github.com/Aditya384197/$repo.git" \
+              "$n-$repo"; then
+              echo "SUCCESS: $repo"
+            else
+              echo "FAILED: $repo"
+              failed=$((failed+1))
+            fi
+          done
+
+          echo "FAILED_COUNT=$failed" >> "$GITHUB_ENV"
+
+      - name: Create ZIP
+        run: |
+          zip -qr Aditya_All_Repositories_Backup.zip backup
+
+      - name: Upload ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: Aditya-All-Repositories-Source-Backup
+          path: backup/Aditya_All_Repositories_Backup.zip
+          compression-level: 0
+          retention-days: 7
+
+      - name: Backup Summary
+        run: |
+          echo "Backup process completed."
+          echo "Failed repositories: $FAILED_COUNT"
